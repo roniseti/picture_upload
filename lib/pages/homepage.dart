@@ -61,7 +61,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         await showDialog(
           context: context,
           builder: (BuildContext context) {
-            return avicenna.DoubleDialog(
+            return avicenna.CustomDialog(
               title: 'View Image',
               info: (File(photo.imageLocal!).lengthSync() / 1000).toString() + ' KB\n' + (File(photo.thumbLocal!).lengthSync() / 1000).toString() + ' KB',
               // info: photo.isUploaded ? photo.imageUrl : photo.imageLocal,
@@ -107,7 +107,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       Container(
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(4),
-                          child: photo.isUploaded ? Image.network(photo.imageUrl!) : Image.file(File(photo.imageLocal!), fit: BoxFit.cover)
+                          child: InteractiveViewer(child: photo.isUploaded ? Image.network(photo.imageUrl!) : Image.file(File(photo.imageLocal!), fit: BoxFit.cover))
                         ),
                         width: MediaQuery.of(context).size.width /3,
                         // height: MediaQuery.of(context).size.width - 260,
