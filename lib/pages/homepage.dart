@@ -1,20 +1,22 @@
 import 'dart:async';
-import 'dart:convert';
+// import 'dart:convert';
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_native_image/flutter_native_image.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
-// import 'package:picture_uploads/avicenna/avicenna.dart' as avicenna;
+import 'package:picture_uploads/avicenna/avicenna.dart' as avicenna;
 import 'package:picture_uploads/src/models/photo.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+// import 'package:shared_preferences/shared_preferences.dart';
 import 'package:share_plus/share_plus.dart';
 
-import 'package:avicenna/avicenna.dart' as avicenna;
+// import 'package:avicenna/avicenna.dart' as avicenna;
 
 class HomePage extends StatefulWidget {
 
@@ -23,8 +25,9 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
-  late SharedPreferences prefs;
+  // late SharedPreferences prefs;
   List<Photo> temp = [];
+  late Box box;
 
   Future navigateToPage(context, Widget goto) async {
     await Navigator.push(context, MaterialPageRoute(builder: (context) => (goto)));
@@ -37,18 +40,17 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   Future<void> loadPrefs() async {
-    prefs = await SharedPreferences.getInstance();
-    var data = prefs.getString('album');
+    box = await Hive.openBox('photoBox');
     List<Photo> album = [];
-    if (data != null) {
-      var photos = jsonDecode(data);
-      photos.forEach((photo) {
-        album.add(Photo.fromJson(jsonDecode(jsonEncode(photo))));
+    // if (data != null) {
+    //   var photos = jsonDecode(data);
+      box.values.forEach((photo) {
+        album.add(photo);
       });
       setState(() {
         momon = album;
       });
-    }
+    // }
   }
 
   List<Photo> momon = [];
@@ -59,9 +61,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       boxShadow: avicenna.Props.boxShadowSoft,
       onTap: () async {
         await showDialog(
+          barrierColor: Colors.black26,
           context: context,
           builder: (BuildContext context) {
-            return avicenna.CustomDialog(
+            return BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+                child: avicenna.CustomDialog(
               title: 'View Image',
               info: (File(photo.imageLocal!).lengthSync() / 1000).toString() + ' KB\n' + (File(photo.thumbLocal!).lengthSync() / 1000).toString() + ' KB',
               // info: photo.isUploaded ? photo.imageUrl : photo.imageLocal,
@@ -90,8 +95,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   onPressed: () async {
                     await File(photo.imageLocal!).delete();
                     await File(photo.thumbLocal!).delete();
+                    box.delete(photo.dbId);
                     setState(() => momon.removeAt(index));
-                    prefs.setString('album', jsonEncode(momon));
+                    // prefs.setString('album', jsonEncode(momon));
                     Navigator.pop(context);
                   },
                   isDestructive: true
@@ -122,7 +128,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   // ),
                 ),
               ),
-            );
+            ));
           },
         );
       },
@@ -234,9 +240,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 onTap: () async {
                   var source;
                   await showDialog(
+                    barrierColor: Colors.black26,
                     context: context,
                     builder: (BuildContext context) {
-                      return avicenna.CustomDialog(
+                      return BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+                      child: avicenna.CustomDialog(
                         title: 'Ambil Gambar',
                         info: 'Ambil gambar dari kamera atau galeri',
                         content: Container(
@@ -273,7 +282,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                               ],
                             )
                         ),
-                      );
+                      ));
                     }
                   );
 
@@ -377,18 +386,20 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                   if (title.isNotEmpty) avicenna.ModalActionItem(
                                     text: 'Simpan',
                                     onPressed: () async {
-                                      var guid = Uuid().v1();
+                                      var guid = Uuid().v4();
                                       final String path = (await getApplicationDocumentsDirectory()).path;
                                       await _image.copy('$path/$guid.png');
                                       await _thumbImage.copy('$path/$guid-thumb.png');
-
+                                      var photo = Photo(
+                                        dbId: guid,
+                                        title: title,
+                                        isUploaded: false,
+                                        imageLocal: '$path/$guid.png',
+                                        thumbLocal: '$path/$guid-thumb.png'
+                                      );
+                                      box.put(guid, photo);
                                       setState(() {
-                                        momon.add(Photo(
-                                          title: title,
-                                          isUploaded: false,
-                                          imageLocal: '$path/$guid.png',
-                                          thumbLocal: '$path/$guid-thumb.png'
-                                        ));
+                                        momon.add(photo);
                                       });
                                       Navigator.pop(context);
                                     }
@@ -400,7 +411,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                         );
                       }
 
-                      prefs.setString('album', jsonEncode(momon));
+                      // prefs.setString('album', jsonEncode(momon));
                     } else {
                       print('No image selected.');
                     }

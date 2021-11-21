@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 import 'package:picture_uploads/avicenna/avicenna.dart' as avicenna;
 import 'package:picture_uploads/pages/secondpage.dart';
+
+import 'hive_explorer.dart';
 
 class MenuItem {
   MenuItem({
@@ -20,7 +23,7 @@ class ActualHomePage extends StatefulWidget {
 }
 
 class _ActualHomePageState extends State<ActualHomePage> with WidgetsBindingObserver {
-
+  late Box box;
   Future navigateToPage(context, Widget goto) async {
     await Navigator.push(context, MaterialPageRoute(builder: (context) => (goto)));
   }
@@ -31,6 +34,25 @@ class _ActualHomePageState extends State<ActualHomePage> with WidgetsBindingObse
     MenuItem(id: 3, name: 'kicauan'),
     MenuItem(id: 4, name: 'linsang'),
   ];
+
+  @override initState(){
+    super.initState();
+    initBox();
+  }
+
+  Future<void> initBox() async {
+    box = await Hive.openBox('photoBox');
+    // var momo = box.values;
+    // momo.forEach((element) {
+    //   log(jsonEncode(element));
+    // });
+    // final Map deliveriesMap = box.toMap();
+    // // dynamic desiredKey;
+    // deliveriesMap.forEach((key, value){
+    //   log('$key');
+    //   log(jsonEncode(value));
+    // });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +70,9 @@ class _ActualHomePageState extends State<ActualHomePage> with WidgetsBindingObse
         elevation: 0,
         backgroundColor: avicenna.Colors.background,//Color(0xFFF7F8FA),
         actions: [
-        // IconButton(onPressed: _pickProfile, icon: Icon(Icons.file_download), tooltip: 'Import Profile from file'),
+          IconButton(onPressed: () {
+            navigateToPage(context, HiveExplorer());
+          }, icon: Icon(Icons.file_download), tooltip: 'Import Profile from file'),
         // IconButton(onPressed: _newProfile, icon: Icon(Icons.add), tooltip: 'Create Profile'),
         ],
       ),
